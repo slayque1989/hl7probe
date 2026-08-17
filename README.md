@@ -58,10 +58,11 @@ No configuration, no database, no server. One binary, one file, one answer.
 ### Homebrew (macOS and Linux)
 
 ```sh
-brew tap sudhi001/tap
-brew trust sudhi001/tap    # Homebrew 6 asks this once for third-party taps
-brew install hl7test
+brew install sudhi001/tap/hl7test
 ```
+
+Recent Homebrew versions ask you to trust a third-party tap the first time; if
+you see that prompt, run `brew trust sudhi001/tap` and install again.
 
 ### Download a prebuilt binary
 
