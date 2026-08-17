@@ -59,6 +59,7 @@ No configuration, no database, no server. One binary, one file, one answer.
 
 ```sh
 brew tap sudhi001/tap
+brew trust sudhi001/tap    # Homebrew 6 asks this once for third-party taps
 brew install hl7test
 ```
 
@@ -340,11 +341,17 @@ The code is organised as:
 | `src/datetime.rs` | HL7 date and time handling |
 | `src/main.rs` | Command-line interface |
 
+## Changelog
+
+Release notes live in [CHANGELOG.md](CHANGELOG.md).
+
 ## Contributing
 
 Issues and pull requests are welcome. Please make sure `cargo test` and
 `cargo clippy --all-targets` pass, and add a test alongside any behaviour
 change — the fastest way to describe an HL7 bug is a message that reproduces it.
+
+Note your change under `Unreleased` in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

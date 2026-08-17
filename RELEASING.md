@@ -2,15 +2,17 @@
 
 ## Cutting a release
 
-1. Bump `version` in `Cargo.toml`, run `cargo test`, and commit.
-2. Tag and push:
+1. Move the `Unreleased` entries in [`CHANGELOG.md`](CHANGELOG.md) under a new
+   version heading, and add the comparison links at the bottom of that file.
+2. Bump `version` in `Cargo.toml`, run `cargo test`, and commit.
+3. Tag and push:
 
    ```sh
    git tag -a v0.1.0 -m "v0.1.0"
    git push origin v0.1.0
    ```
 
-3. The `Release` workflow builds `hl7test` for macOS (Apple silicon and Intel)
+4. The `Release` workflow builds `hl7test` for macOS (Apple silicon and Intel)
    and Linux (x86_64 and aarch64), then attaches the tarballs and their SHA-256
    sums to a GitHub release.
 
