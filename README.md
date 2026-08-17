@@ -58,9 +58,10 @@ No configuration, no database, no server. One binary, one file, one answer.
 ### Homebrew (macOS and Linux)
 
 ```sh
-brew install sudhi001/tap/hl7test
+brew install sudhi001/tap/hl7probe
 ```
 
+The formula is named after the project; the command it installs is `hl7test`.
 Recent Homebrew versions ask you to trust a third-party tap the first time; if
 you see that prompt, run `brew trust sudhi001/tap` and install again.
 

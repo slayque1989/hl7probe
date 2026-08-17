@@ -32,19 +32,22 @@ echo "$url"
 echo "$sha"
 ```
 
-Put those two values into `Formula/hl7test.rb` here and in the copy published in
+Put those two values into `Formula/hl7probe.rb` here and in the copy published in
 the [`sudhi001/homebrew-tap`](https://github.com/sudhi001/homebrew-tap)
 repository, then verify locally:
 
 ```sh
-brew install --build-from-source ./Formula/hl7test.rb
-brew test hl7test
-brew audit --strict --new hl7test
+brew install --build-from-source ./Formula/hl7probe.rb
+brew test hl7probe
+brew audit --strict --new hl7probe
 ```
 
 Users install with:
 
 ```sh
-brew tap sudhi001/tap
-brew install hl7test
+brew install sudhi001/tap/hl7probe
 ```
+
+The bare `brew install hl7probe` needs the formula to live in homebrew-core,
+which accepts a project once it is established; until then the tap prefix, or a
+one-off `brew tap sudhi001/tap`, is required.

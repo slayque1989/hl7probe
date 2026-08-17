@@ -1,4 +1,4 @@
-class Hl7test < Formula
+class Hl7probe < Formula
   desc "Inspect and validate HL7 v2 messages from the command line"
   homepage "https://github.com/sudhi001/hl7probe"
   url "https://github.com/sudhi001/hl7probe/archive/refs/tags/v0.1.0.tar.gz"
