@@ -1248,7 +1248,7 @@ PID|1||123456^^^MERCY^MR||Smith^John||19850312|M|||1 Oak St^^Springfield^IL^6270
         // segments and fields it is interested in.
         let messages = [
             adt(&[]),
-            format!("{HEADER}"),
+            HEADER.to_string(),
             format!("{HEADER}PID|1\rOBX|1|NM|X^Y^L||text\r"),
             "MSH|^~\\&|A|B|C|D|20240115143200||ACK|1|P|2.5.1\rMSA|AA|1\r".to_string(),
         ];
