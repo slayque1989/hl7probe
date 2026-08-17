@@ -1,0 +1,608 @@
+//! hl7test - inspect and validate HL7 v2 messages from the command line.
+
+mod datetime;
+mod parser;
+mod render;
+mod spec;
+mod text;
+mod tui;
+mod validate;
+mod view;
+
+use std::fmt::Write as _;
+use std::io::{IsTerminal, Read, Write};
+use std::path::{Path, PathBuf};
+use std::process::ExitCode;
+
+use clap::{ArgAction, Parser, ValueEnum};
+
+use parser::Message;
+use validate::{Report, Severity};
+
+#[derive(Copy, Clone, PartialEq, Eq, ValueEnum)]
+enum ColorChoice {
+    Auto,
+    Always,
+    Never,
+}
+
+#[derive(Parser)]
+#[command(
+    name = "hl7test",
+    version,
+    about = "Inspect and validate HL7 v2 messages",
+    long_about = "Reads HL7 v2.x messages, decodes them into named fields and reports \
+structural, required-field, data-type, code-table and consistency problems.\n\n\
+Exit status: 0 clean, 1 validation errors, 2 unreadable input.",
+    after_help = "EXAMPLES:\n  \
+hl7test adt.hl7                    inspect a message\n  \
+hl7test --tui adt.hl7              browse it interactively\n  \
+hl7test -s PID,PV1 adt.hl7         only show two segments\n  \
+hl7test -f PID-5.1 adt.hl7         print one field value\n  \
+hl7test --json adt.hl7 | jq .      machine-readable report\n  \
+cat adt.hl7 | hl7test -q           validate in a pipeline"
+)]
+struct Cli {
+    /// HL7 files to read; "-" or no argument reads standard input
+    #[arg(value_name = "FILE")]
+    files: Vec<PathBuf>,
+
+    /// Browse the message in an interactive terminal viewer
+    #[arg(short = 't', long)]
+    tui: bool,
+
+    /// Emit the full report as JSON
+    #[arg(long, conflicts_with = "tui")]
+    json: bool,
+
+    /// Print only the validation verdict
+    #[arg(short = 'q', long, conflicts_with = "json")]
+    quiet: bool,
+
+    /// Include informational notes
+    #[arg(short = 'v', long, action = ArgAction::SetTrue)]
+    verbose: bool,
+
+    /// Show fields the sender left empty
+    #[arg(short = 'a', long = "all")]
+    show_empty: bool,
+
+    /// Limit field tables to these segments (comma separated)
+    #[arg(
+        short = 's',
+        long = "segment",
+        value_delimiter = ',',
+        value_name = "NAME"
+    )]
+    segments: Vec<String>,
+
+    /// Skip field tables and show only the segment list and verdict
+    #[arg(long)]
+    summary: bool,
+
+    /// Print the raw segment line above each field table
+    #[arg(long)]
+    raw: bool,
+
+    /// Print a single value, e.g. PID-5.1, OBX[2]-5 or PV1-3.2
+    #[arg(short = 'f', long = "field", value_name = "PATH")]
+    field: Option<String>,
+
+    /// Treat warnings as errors when setting the exit status
+    #[arg(long)]
+    strict: bool,
+
+    /// Only inspect the Nth message in the file
+    #[arg(short = 'm', long, value_name = "N")]
+    message: Option<usize>,
+
+    /// When to colourise output
+    #[arg(long, value_enum, default_value = "auto")]
+    color: ColorChoice,
+
+    /// Wrap output at this many columns
+    #[arg(long, value_name = "COLUMNS")]
+    width: Option<usize>,
+}
+
+struct Input {
+    label: String,
+    text: String,
+}
+
+fn main() -> ExitCode {
+    let cli = Cli::parse();
+    match run(&cli) {
+        Ok(code) => code,
+        Err(e) => {
+            eprintln!("hl7test: {}", e);
+            ExitCode::from(2)
+        }
+    }
+}
+
+fn run(cli: &Cli) -> Result<ExitCode, String> {
+    let inputs = read_inputs(cli)?;
+    let color = match cli.color {
+        ColorChoice::Always => true,
+        ColorChoice::Never => false,
+        ColorChoice::Auto => {
+            std::io::stdout().is_terminal() && std::env::var_os("NO_COLOR").is_none()
+        }
+    };
+    let width = cli
+        .width
+        .or_else(|| crossterm::terminal::size().ok().map(|(w, _)| w as usize))
+        .unwrap_or(100)
+        .clamp(48, 160);
+
+    let options = render::Options {
+        paint: render::Paint::new(color),
+        width,
+        show_empty: cli.show_empty,
+        verbose: cli.verbose,
+        summary_only: cli.summary,
+        only: cli.segments.clone(),
+        raw: cli.raw,
+    };
+
+    // Parse everything first so a bad message in a batch still reports cleanly.
+    let mut files: Vec<ParsedFile> = Vec::new();
+    for input in &inputs {
+        files.push(parse_file(input, cli.message)?);
+    }
+
+    if let Some(path) = &cli.field {
+        return query_field(&files, path, &options);
+    }
+    if cli.tui {
+        let all: Vec<(String, Message, Report)> = files
+            .into_iter()
+            .flat_map(|f| {
+                let label = f.label.clone();
+                f.messages
+                    .into_iter()
+                    .map(move |(m, r)| (label.clone(), m, r))
+            })
+            .collect();
+        if all.is_empty() {
+            return Err("no parsable messages to display".into());
+        }
+        tui::run(all).map_err(|e| e.to_string())?;
+        return Ok(ExitCode::SUCCESS);
+    }
+    if cli.json {
+        return emit_json(&files, cli.strict);
+    }
+
+    let report = format_files(&files, &options, cli.quiet);
+    write_out(&report.text)?;
+    Ok(exit_code(report.worst, report.parse_failures, cli.strict))
+}
+
+/// The printed report for a run, plus what it means for the exit status.
+struct TextReport {
+    text: String,
+    worst: Option<Severity>,
+    parse_failures: usize,
+}
+
+/// Renders every message of every file into one buffer. Formatting into a
+/// `String` keeps the write, and its error handling, in a single place.
+fn format_files(files: &[ParsedFile], o: &render::Options, quiet: bool) -> TextReport {
+    let mut text = String::new();
+    let mut worst: Option<Severity> = None;
+    let mut parse_failures = 0usize;
+    let multi_file = files.len() > 1;
+
+    for file in files {
+        if multi_file && !quiet {
+            let _ = writeln!(
+                text,
+                "\n{}",
+                o.paint.bold(&format!(
+                    "{} {}",
+                    render::RULE.to_string().repeat(2),
+                    file.label
+                ))
+            );
+        }
+        if !quiet {
+            for note in &file.notes {
+                let _ = writeln!(text, "{}", o.paint.yellow(&format!("note: {}", note)));
+            }
+        }
+        for error in &file.errors {
+            parse_failures += 1;
+            let _ = writeln!(text, "{}", o.paint.red(&format!("parse error: {}", error)));
+        }
+        for (index, (msg, report)) in file.messages.iter().enumerate() {
+            worst = worst.max(report.worst());
+            if quiet {
+                let _ = writeln!(text, "{}", quiet_line(file, msg, report, index, o));
+                continue;
+            }
+            if file.messages.len() > 1 {
+                let _ = writeln!(
+                    text,
+                    "\n{}",
+                    o.paint.dim(&format!(
+                        "message {} of {}   line {}",
+                        index + 1,
+                        file.messages.len(),
+                        msg.start_line
+                    ))
+                );
+            }
+            for note in &msg.notes {
+                let _ = writeln!(text, "{}", o.paint.dim(&format!("note: {}", note)));
+            }
+            text.push_str(&render::render_message(msg, report, o));
+        }
+    }
+    TextReport {
+        text,
+        worst,
+        parse_failures,
+    }
+}
+
+/// One grep-friendly line per message: where it came from, what it is, and the
+/// verdict.
+fn quiet_line(
+    file: &ParsedFile,
+    msg: &Message,
+    report: &Report,
+    index: usize,
+    o: &render::Options,
+) -> String {
+    let origin = if file.messages.len() > 1 {
+        format!("{}#{}", file.label, index + 1)
+    } else {
+        file.label.clone()
+    };
+    format!(
+        "{}  {}  {}",
+        o.paint.bold(&origin),
+        msg.type_label(),
+        render::summary_line(report, o)
+    )
+}
+
+/// Writes the report to stdout, treating a closed pipe (`hl7test ... | head`)
+/// as a normal end rather than an error.
+fn write_out(text: &str) -> Result<(), String> {
+    let mut stdout = std::io::stdout().lock();
+    match stdout
+        .write_all(text.as_bytes())
+        .and_then(|_| stdout.flush())
+    {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == std::io::ErrorKind::BrokenPipe => Ok(()),
+        Err(e) => Err(format!("stdout: {}", e)),
+    }
+}
+
+fn exit_code(worst: Option<Severity>, parse_failures: usize, strict: bool) -> ExitCode {
+    if parse_failures > 0 {
+        return ExitCode::from(2);
+    }
+    match worst {
+        Some(Severity::Error) => ExitCode::from(1),
+        Some(Severity::Warning) if strict => ExitCode::from(1),
+        _ => ExitCode::SUCCESS,
+    }
+}
+
+struct ParsedFile {
+    label: String,
+    messages: Vec<(Message, Report)>,
+    errors: Vec<String>,
+    notes: Vec<String>,
+}
+
+fn parse_file(input: &Input, only: Option<usize>) -> Result<ParsedFile, String> {
+    let (raws, notes) = parser::split_messages(&input.text);
+    if raws.is_empty() {
+        return Err(format!(
+            "{}: no MSH segment found - is this an HL7 v2 message?",
+            input.label
+        ));
+    }
+    let mut messages = Vec::new();
+    let mut errors = Vec::new();
+    for (i, raw) in raws.iter().enumerate() {
+        if let Some(n) = only {
+            if i + 1 != n {
+                continue;
+            }
+        }
+        match parser::parse_message(raw) {
+            Ok(msg) => {
+                let report = validate::validate(&msg);
+                messages.push((msg, report));
+            }
+            Err(e) => errors.push(format!("{}: {}", input.label, e)),
+        }
+    }
+    if let Some(n) = only {
+        if messages.is_empty() && errors.is_empty() {
+            return Err(format!(
+                "{}: message {} requested but the file holds {}",
+                input.label,
+                n,
+                raws.len()
+            ));
+        }
+    }
+    Ok(ParsedFile {
+        label: input.label.clone(),
+        messages,
+        errors,
+        notes,
+    })
+}
+
+fn read_inputs(cli: &Cli) -> Result<Vec<Input>, String> {
+    let use_stdin = cli.files.is_empty() || cli.files.iter().any(|f| f.as_os_str() == "-");
+    if cli.files.is_empty() && std::io::stdin().is_terminal() {
+        return Err("no input given - pass a file or pipe a message in (try --help)".into());
+    }
+    let mut inputs = Vec::new();
+    for file in cli.files.iter().filter(|f| f.as_os_str() != "-") {
+        inputs.push(Input {
+            label: label_for(file),
+            text: read_file(file)?,
+        });
+    }
+    if use_stdin {
+        let mut buf = Vec::new();
+        std::io::stdin()
+            .read_to_end(&mut buf)
+            .map_err(|e| format!("stdin: {}", e))?;
+        inputs.push(Input {
+            label: "<stdin>".into(),
+            text: decode(buf),
+        });
+    }
+    Ok(inputs)
+}
+
+fn label_for(path: &Path) -> String {
+    path.file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| path.display().to_string())
+}
+
+fn read_file(path: &Path) -> Result<String, String> {
+    let bytes = std::fs::read(path).map_err(|e| format!("{}: {}", path.display(), e))?;
+    Ok(decode(bytes))
+}
+
+/// HL7 traffic is frequently latin-1; fall back to a lossy 8-bit decode so a
+/// stray accented character never costs us the whole message.
+fn decode(bytes: Vec<u8>) -> String {
+    match String::from_utf8(bytes) {
+        Ok(s) => s,
+        Err(e) => e.into_bytes().iter().map(|b| *b as char).collect(),
+    }
+}
+
+// ------------------------------------------------------------------ field query
+
+struct FieldPath {
+    segment: String,
+    occurrence: usize,
+    field: usize,
+    repetition: Option<usize>,
+    component: Option<usize>,
+    subcomponent: Option<usize>,
+}
+
+fn parse_field_path(spec_str: &str) -> Result<FieldPath, String> {
+    let bad = || {
+        format!(
+            "{:?} is not a field path - use SEG-n[.component[.subcomponent]], e.g. PID-5.1 or OBX[2]-5",
+            spec_str
+        )
+    };
+    let (head, tail) = spec_str.split_once('-').ok_or_else(bad)?;
+    let (segment, occurrence) = match head.split_once('[') {
+        Some((name, rest)) => {
+            let n: usize = rest.trim_end_matches(']').parse().map_err(|_| bad())?;
+            (name.to_string(), n.max(1))
+        }
+        None => (head.to_string(), 1),
+    };
+    if segment.chars().count() != 3 {
+        return Err(bad());
+    }
+    let mut parts = tail.split('.');
+    let field_part = parts.next().ok_or_else(bad)?;
+    let (field_str, repetition) = match field_part.split_once('[') {
+        Some((f, rest)) => (
+            f,
+            Some(
+                rest.trim_end_matches(']')
+                    .parse::<usize>()
+                    .map_err(|_| bad())?,
+            ),
+        ),
+        None => (field_part, None),
+    };
+    let field: usize = field_str.parse().map_err(|_| bad())?;
+    let component = parts
+        .next()
+        .map(|c| c.parse::<usize>())
+        .transpose()
+        .map_err(|_| bad())?;
+    let subcomponent = parts
+        .next()
+        .map(|c| c.parse::<usize>())
+        .transpose()
+        .map_err(|_| bad())?;
+    Ok(FieldPath {
+        segment: segment.to_uppercase(),
+        occurrence,
+        field,
+        repetition,
+        component,
+        subcomponent,
+    })
+}
+
+fn query_field(
+    files: &[ParsedFile],
+    path_str: &str,
+    o: &render::Options,
+) -> Result<ExitCode, String> {
+    let path = parse_field_path(path_str)?;
+    let mut found = false;
+    let multi = files.len() > 1 || files.iter().map(|f| f.messages.len()).sum::<usize>() > 1;
+    for file in files {
+        for (i, (msg, _)) in file.messages.iter().enumerate() {
+            let seg = msg
+                .segments
+                .iter()
+                .filter(|s| s.name == path.segment)
+                .nth(path.occurrence - 1);
+            let Some(seg) = seg else { continue };
+            let Some(field) = seg.field(path.field) else {
+                continue;
+            };
+            let reps: Vec<usize> = match path.repetition {
+                Some(r) => vec![r],
+                None => (1..=field.reps.len()).collect(),
+            };
+            for r in reps {
+                let rep = field.rep(r);
+                let value = match (path.component, path.subcomponent) {
+                    (None, _) => rep.raw(&msg.sep),
+                    (Some(c), None) => rep.comp_text(c, &msg.sep),
+                    (Some(c), Some(s)) => rep.comp(c).sub(s).to_string(),
+                };
+                let value = parser::unescape(&value, &msg.sep);
+                found = true;
+                if multi {
+                    println!(
+                        "{}",
+                        o.paint.dim(&format!("{}#{}", file.label, i + 1)) + "\t" + &value
+                    );
+                } else {
+                    println!("{}", value);
+                }
+            }
+        }
+    }
+    if !found {
+        return Ok(ExitCode::from(1));
+    }
+    Ok(ExitCode::SUCCESS)
+}
+
+// ------------------------------------------------------------------ json output
+
+fn emit_json(files: &[ParsedFile], strict: bool) -> Result<ExitCode, String> {
+    let mut worst: Option<Severity> = None;
+    let mut failures = 0usize;
+    let mut out_files = Vec::new();
+
+    for file in files {
+        failures += file.errors.len();
+        let mut msgs = Vec::new();
+        for (msg, report) in &file.messages {
+            worst = worst.max(report.worst());
+            msgs.push(message_json(msg, report));
+        }
+        out_files.push(serde_json::json!({
+            "file": file.label,
+            "notes": file.notes,
+            "parse_errors": file.errors,
+            "messages": msgs,
+        }));
+    }
+
+    let doc = serde_json::json!({
+        "tool": "hl7test",
+        "version": env!("CARGO_PKG_VERSION"),
+        "files": out_files,
+        "status": match worst {
+            Some(Severity::Error) => "error",
+            Some(Severity::Warning) => "warning",
+            _ if failures > 0 => "error",
+            _ => "ok",
+        },
+    });
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&doc).map_err(|e| e.to_string())?
+    );
+    Ok(exit_code(worst, failures, strict))
+}
+
+fn message_json(msg: &Message, report: &Report) -> serde_json::Value {
+    let sep = &msg.sep;
+    let (code, trigger, structure) = msg.message_type();
+    let segments: Vec<serde_json::Value> = msg
+        .segments
+        .iter()
+        .enumerate()
+        .map(|(i, seg)| {
+            let fields: Vec<serde_json::Value> = (1..=seg.last_populated())
+                .filter(|s| seg.has(*s))
+                .map(|s| {
+                    let field = seg.field(s).unwrap();
+                    serde_json::json!({
+                        "seq": s,
+                        "name": spec::field_label(&seg.name, s),
+                        "value": parser::unescape(&field.raw(sep), sep),
+                        "repetitions": field.reps.iter().map(|r| {
+                            r.comps.iter().map(|c| c.subs.clone()).collect::<Vec<_>>()
+                        }).collect::<Vec<_>>(),
+                    })
+                })
+                .collect();
+            serde_json::json!({
+                "name": seg.name,
+                "description": spec::segment_desc(&seg.name),
+                "occurrence": seg.occurrence,
+                "line": seg.line,
+                "severity": report.segment_severity(i, true).map(|s| s.label()),
+                "fields": fields,
+            })
+        })
+        .collect();
+
+    let findings: Vec<serde_json::Value> = report
+        .findings
+        .iter()
+        .map(|f| {
+            serde_json::json!({
+                "severity": f.severity.label(),
+                "category": f.category.title(),
+                "location": f.location,
+                "line": f.line,
+                "summary": f.summary,
+                "detail": f.detail,
+            })
+        })
+        .collect();
+
+    serde_json::json!({
+        "version": msg.version(),
+        "type": msg.type_label(),
+        "message_code": code,
+        "trigger_event": trigger,
+        "structure": structure,
+        "description": report.structure.map(|s| s.desc),
+        "control_id": msg.control_id(),
+        "line": msg.start_line,
+        "segments": segments,
+        "findings": findings,
+        "summary": {
+            "errors": report.errors(),
+            "warnings": report.warnings(),
+            "notes": report.count(Severity::Info),
+        },
+    })
+}
