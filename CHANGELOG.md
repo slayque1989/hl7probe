@@ -7,6 +7,13 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Changed
+
+- Validation is organised as a registry of independent rules, so a new check is
+  a new rule rather than an edit to an existing pass.
+- The printed report and the interactive viewer share one decoded field model
+  instead of deriving the same rows separately.
+
 ## [0.1.0] - 2026-08-17
 
 First release.

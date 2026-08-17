@@ -155,6 +155,10 @@ pub fn validate(msg: &Message) -> Report {
     }
 }
 
+/// The parser guarantees a message starts with MSH, so its findings always
+/// belong to the first segment.
+const MSH_INDEX: usize = 0;
+
 /// One independent validation concern.
 ///
 /// Rules never see each other: a new check is a new implementation added to
@@ -786,7 +790,6 @@ impl Rule for MessageHeaderRule {
         let sep = &msg.sep;
         let (ty, tm, td) = datetime::today();
         let msh = msg.msh();
-        let msh_index = 0usize;
         let control = msg.control_id();
         if control.chars().count() > 20 {
             out.push(
@@ -800,7 +803,7 @@ impl Rule for MessageHeaderRule {
                         control.chars().count()
                     ),
                 )
-                .at(msh, msh_index),
+                .at(msh, MSH_INDEX),
             );
         }
 
@@ -814,7 +817,7 @@ impl Rule for MessageHeaderRule {
                         "message date/time is in the future",
                         format!("{} is later than today", ts.display()),
                     )
-                    .at(msh, msh_index),
+                    .at(msh, MSH_INDEX),
                 );
             }
             if ts.precision < Precision::Minute {
@@ -826,7 +829,7 @@ impl Rule for MessageHeaderRule {
                         "message date/time has no time component",
                         "MSH-7 should carry at least YYYYMMDDHHMM",
                     )
-                    .at(msh, msh_index),
+                    .at(msh, MSH_INDEX),
                 );
             }
         }
@@ -841,7 +844,7 @@ impl Rule for MessageHeaderRule {
                     "non-ASCII characters sent without a declared character set",
                     "populate MSH-18 (e.g. UNICODE UTF-8) so the receiver decodes correctly",
                 )
-                .at(msh, msh_index),
+                .at(msh, MSH_INDEX),
             );
         }
     }
@@ -1237,6 +1240,43 @@ mod tests {
 PID|1||123456^^^MERCY^MR||Smith^John||19850312|M|||1 Oak St^^Springfield^IL^62704\r{}",
             segment("PV1", &pv1)
         )
+    }
+
+    #[test]
+    fn every_rule_stands_on_its_own() {
+        // Each rule must cope with any message, including one missing the
+        // segments and fields it is interested in.
+        let messages = [
+            adt(&[]),
+            format!("{HEADER}"),
+            format!("{HEADER}PID|1\rOBX|1|NM|X^Y^L||text\r"),
+            "MSH|^~\\&|A|B|C|D|20240115143200||ACK|1|P|2.5.1\rMSA|AA|1\r".to_string(),
+        ];
+        for text in messages {
+            let msg = parse_str(&text);
+            for rule in RULES {
+                let mut findings = Vec::new();
+                rule.check(&msg, &mut findings);
+            }
+        }
+    }
+
+    #[test]
+    fn validate_collects_from_every_rule() {
+        let msg = parse_str(&adt(&[]));
+        let combined = validate(&msg).findings.len();
+        let separate: usize = RULES
+            .iter()
+            .map(|rule| {
+                let mut findings = Vec::new();
+                rule.check(&msg, &mut findings);
+                findings.len()
+            })
+            .sum();
+        assert_eq!(
+            combined, separate,
+            "validate() must run each rule exactly once"
+        );
     }
 
     #[test]

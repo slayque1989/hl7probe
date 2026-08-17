@@ -326,7 +326,7 @@ Requires [Rust](https://rustup.rs) 1.74 or newer.
 git clone https://github.com/sudhi001/hl7probe.git
 cd hl7probe
 cargo build --release      # binary at target/release/hl7test
-cargo test                 # 67 tests
+cargo test                 # 77 tests
 cargo clippy --all-targets
 ```
 
@@ -336,11 +336,16 @@ The code is organised as:
 | --- | --- |
 | `src/parser.rs` | Splitting messages into segments, fields, components |
 | `src/spec.rs` | The HL7 dictionary: field names, code tables, message layouts |
-| `src/validate.rs` | The five groups of checks |
+| `src/validate.rs` | The checks, one rule per concern |
+| `src/view.rs` | The decoded field model both output modes share |
 | `src/render.rs` | The printed report |
 | `src/tui.rs` | The interactive viewer |
 | `src/datetime.rs` | HL7 date and time handling |
+| `src/text.rs` | Padding and truncation helpers |
 | `src/main.rs` | Command-line interface |
+
+Adding a validation check means writing one `Rule` implementation in
+`src/validate.rs` and listing it in `RULES`; nothing else changes.
 
 ## Changelog
 
