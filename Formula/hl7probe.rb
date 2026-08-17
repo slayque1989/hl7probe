@@ -1,5 +1,5 @@
 class Hl7probe < Formula
-  desc "Inspect and validate HL7 v2 messages from the command line"
+  desc "Inspect and validate HL7 v2 messages"
   homepage "https://github.com/sudhi001/hl7probe"
   url "https://github.com/sudhi001/hl7probe/archive/refs/tags/v0.1.0.tar.gz"
   sha256 "6850b0e5d07bed32b3613d4c7da50e0fc36542239a5ff5188b524494e9edda75"
