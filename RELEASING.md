@@ -21,25 +21,27 @@ pass the tag name.
 
 ## Updating the Homebrew formula
 
-The formula builds from the tagged source tarball, so it only needs the new URL
+The formula lives in [`sudhi001/homebrew-tap`](https://github.com/sudhi001/homebrew-tap),
+not here: it records the checksum of a tag of this repository, so it cannot sit
+inside the tag it describes.
+
+It builds from the tagged source tarball, so a release only needs the new URL
 and checksum:
 
 ```sh
 version=0.1.0
 url="https://github.com/sudhi001/hl7probe/archive/refs/tags/v${version}.tar.gz"
-sha=$(curl -sL "$url" | shasum -a 256 | cut -d' ' -f1)
-echo "$url"
-echo "$sha"
+curl -fsSL -o "hl7probe-${version}.tar.gz" "$url"
+tar -tzf "hl7probe-${version}.tar.gz" >/dev/null   # reject error pages
+shasum -a 256 "hl7probe-${version}.tar.gz"
 ```
 
-Put those two values into `Formula/hl7probe.rb` here and in the copy published in
-the [`sudhi001/homebrew-tap`](https://github.com/sudhi001/homebrew-tap)
-repository, then verify locally:
+Put the `url` and `sha256` into `Formula/hl7probe.rb` in the tap, then verify:
 
 ```sh
-brew install --build-from-source ./Formula/hl7probe.rb
+brew style Formula/hl7probe.rb
+brew install --build-from-source sudhi001/tap/hl7probe
 brew test hl7probe
-brew audit --strict --new hl7probe
 ```
 
 Users install with:
