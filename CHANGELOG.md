@@ -7,6 +7,18 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-18
+
+### Added
+
+- Windows binaries. Releases now carry `hl7test-<version>-x86_64-pc-windows-msvc.zip`
+  alongside the macOS and Linux archives.
+
+### Changed
+
+- Every release binary except the cross-compiled Intel macOS one is started on
+  its own runner before being packaged.
+
 ## [0.1.1] - 2026-08-18
 
 ### Fixed
@@ -50,6 +62,7 @@ First release.
   (`--quiet`), segment filters (`--segment`) and `--strict` exit codes.
 - Homebrew formula and prebuilt binaries for macOS and Linux.
 
-[Unreleased]: https://github.com/sudhi001/hl7probe/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/sudhi001/hl7probe/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/sudhi001/hl7probe/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/sudhi001/hl7probe/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/sudhi001/hl7probe/releases/tag/v0.1.0

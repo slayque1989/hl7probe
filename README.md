@@ -80,6 +80,13 @@ tar xzf hl7test-*.tar.gz
 sudo mv hl7test-*/hl7test /usr/local/bin/
 ```
 
+On Windows, download the `x86_64-pc-windows-msvc.zip` archive, unpack it and put
+`hl7test.exe` in a folder on your `PATH`:
+
+```powershell
+Expand-Archive hl7test-*-x86_64-pc-windows-msvc.zip -DestinationPath .
+```
+
 ### With Cargo
 
 ```sh
