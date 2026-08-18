@@ -20,8 +20,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Added
 
-- Windows binaries. Releases now carry `hl7test-<version>-x86_64-pc-windows-msvc.zip`
-  alongside the macOS and Linux archives.
+- Windows binaries. Releases carry
+  `hl7test-<version>-x86_64-pc-windows-msvc.zip` alongside the macOS and Linux
+  archives. (Archives up to 0.1.2 carry the old `hl7test` name; 0.2.0 onwards
+  are `hl7probe-<version>-<target>`.)
 
 ### Changed
 
