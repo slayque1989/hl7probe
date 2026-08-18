@@ -7,19 +7,26 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
-### Added
-
-- A demo GIF and screenshots in the README, generated from real output by
-  `docs/tools/render_media.py`.
+## [0.1.1] - 2026-08-18
 
 ### Fixed
 
+- The Linux binaries are now static musl builds. The 0.1.0 ones were linked
+  against the build runner's glibc 2.39 and would not start on Debian 12,
+  Ubuntu 22.04, RHEL 8 or 9, or Amazon Linux, which report
+  `version 'GLIBC_2.39' not found`. The new binaries have no libc dependency
+  and run on any Linux, including Alpine.
 - Release checksum files record only the archive name, so `shasum -a 256 -c`
   works in the directory a user downloads into.
 - The Intel macOS binary is cross-compiled on an Apple silicon runner, which no
   longer leaves a release waiting on a scarce Intel runner.
 - The release job reports why creating a release failed instead of silently
-  trying to upload to one that does not exist.
+  trying to upload to a release that does not exist.
+
+### Added
+
+- A demo GIF and screenshots in the README, generated from real output by
+  `docs/tools/render_media.py`.
 
 ## [0.1.0] - 2026-08-17
 
@@ -43,5 +50,6 @@ First release.
   (`--quiet`), segment filters (`--segment`) and `--strict` exit codes.
 - Homebrew formula and prebuilt binaries for macOS and Linux.
 
-[Unreleased]: https://github.com/sudhi001/hl7probe/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/sudhi001/hl7probe/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/sudhi001/hl7probe/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/sudhi001/hl7probe/releases/tag/v0.1.0

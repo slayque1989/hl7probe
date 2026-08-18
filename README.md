@@ -71,7 +71,8 @@ you see that prompt, run `brew trust sudhi001/tap` and install again.
 
 Grab the archive for your platform from the
 [releases page](https://github.com/sudhi001/hl7probe/releases), unpack it and
-put `hl7test` somewhere on your `PATH`:
+put `hl7test` somewhere on your `PATH`. The Linux builds are static, so they
+run on any distribution regardless of its glibc version:
 
 ```sh
 shasum -a 256 -c hl7test-*.tar.gz.sha256      # optional: verify the download
