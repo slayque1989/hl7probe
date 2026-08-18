@@ -166,6 +166,14 @@ def render_gif(scenes, path):
         frames.append(draw_screen(lines, cursor))
         delays.append(milliseconds)
 
+    # Open on a finished run. Players that show the first frame as a still -
+    # X and GitHub among them - then have something that explains the tool on
+    # its own, rather than an empty prompt.
+    opening_command, opening_output = scenes[0][0], scenes[0][1]
+    screen.append(f"\x1b[32m$\x1b[0m {opening_command}")
+    screen.extend(opening_output.rstrip("\n").split("\n"))
+    add(screen, 2400)
+
     for command, output, hold, chunk in scenes:
         screen.clear()
         for i in range(0, len(command) + 1, 2):
