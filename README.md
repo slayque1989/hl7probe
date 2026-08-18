@@ -4,6 +4,8 @@
 
 [![CI](https://github.com/sudhi001/hl7probe/actions/workflows/ci.yml/badge.svg)](https://github.com/sudhi001/hl7probe/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/sudhi001/hl7probe?sort=semver)](https://github.com/sudhi001/hl7probe/releases)
+[![Downloads](https://img.shields.io/github/downloads/sudhi001/hl7probe/total?label=downloads)](https://github.com/sudhi001/hl7probe/releases)
+[![Stars](https://img.shields.io/github/stars/sudhi001/hl7probe?label=stars)](https://github.com/sudhi001/hl7probe/stargazers)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Hospital systems talk to each other in HL7 v2 — dense lines of text full of
