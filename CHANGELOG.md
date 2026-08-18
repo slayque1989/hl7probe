@@ -7,6 +7,22 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-08-18
+
+### Fixed
+
+- The declared minimum Rust version was 1.74, which no toolchain could honour:
+  `clap` needs 1.85 and `darling`, pulled in through `ratatui`, needs 1.88. It
+  now says 1.88, verified by building and testing with that toolchain.
+- The published crate excluded `examples/` while shipping the integration tests
+  that read them, so `cargo test` failed for anyone who downloaded it.
+- README images use absolute URLs so they render on crates.io.
+
+### Added
+
+- Published on [crates.io](https://crates.io/crates/hl7probe):
+  `cargo install hl7probe`.
+
 ## [0.2.0] - 2026-08-18
 
 ### Changed
@@ -73,7 +89,8 @@ First release.
   (`--quiet`), segment filters (`--segment`) and `--strict` exit codes.
 - Homebrew formula and prebuilt binaries for macOS and Linux.
 
-[Unreleased]: https://github.com/sudhi001/hl7probe/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/sudhi001/hl7probe/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/sudhi001/hl7probe/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/sudhi001/hl7probe/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/sudhi001/hl7probe/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/sudhi001/hl7probe/compare/v0.1.0...v0.1.1

@@ -20,7 +20,7 @@ something a person can read, and tells you what a receiving hospital system
 would reject.
 
 <p align="center">
-  <img src="docs/demo.gif" alt="hl7probe decoding a message, pulling out a field and catching errors in a broken one" width="760">
+  <img src="https://raw.githubusercontent.com/sudhi001/hl7probe/main/docs/demo.gif" alt="hl7probe decoding a message, pulling out a field and catching errors in a broken one" width="760">
 </p>
 
 ---
@@ -89,7 +89,7 @@ Expand-Archive hl7probe-*-x86_64-pc-windows-msvc.zip -DestinationPath .
 ### With Cargo
 
 ```sh
-cargo install --git https://github.com/sudhi001/hl7probe
+cargo install hl7probe
 ```
 
 Check it works:
@@ -124,7 +124,7 @@ hl7probe examples/batch.hl7       # a file holding several messages
 ## Reading the output
 
 <p align="center">
-  <img src="docs/report.svg" alt="a decoded message with its validation findings" width="700">
+  <img src="https://raw.githubusercontent.com/sudhi001/hl7probe/main/docs/report.svg" alt="a decoded message with its validation findings" width="700">
 </p>
 
 The report has three parts.
@@ -196,7 +196,7 @@ hl7probe --tui message.hl7
 ```
 
 <p align="center">
-  <img src="docs/tui.svg" alt="the hl7probe interactive viewer" width="820">
+  <img src="https://raw.githubusercontent.com/sudhi001/hl7probe/main/docs/tui.svg" alt="the hl7probe interactive viewer" width="820">
 </p>
 
 Segments on the left, decoded fields on the right, problems underneath. Move
@@ -335,7 +335,7 @@ Real-world message files are messy. `hl7probe` copes with:
 
 ## Building from source
 
-Requires [Rust](https://rustup.rs) 1.74 or newer.
+Requires [Rust](https://rustup.rs) 1.88 or newer.
 
 ```sh
 git clone https://github.com/sudhi001/hl7probe.git

@@ -1,6 +1,6 @@
 [package]
 name = "hl7probe"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "Inspect and validate HL7 v2 messages from the command line"
 license = "MIT"
@@ -10,8 +10,9 @@ homepage = "https://github.com/sudhi001/hl7probe"
 documentation = "https://github.com/sudhi001/hl7probe#readme"
 keywords = ["hl7", "healthcare", "interoperability", "cli", "validator"]
 categories = ["command-line-utilities", "parser-implementations"]
-rust-version = "1.74"
-exclude = ["docs/", "examples/", ".github/"]
+rust-version = "1.88"
+# examples/ ships because the integration tests read those messages.
+exclude = ["docs/", ".github/"]
 
 [[bin]]
 name = "hl7probe"
