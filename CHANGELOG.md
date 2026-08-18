@@ -7,6 +7,11 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- A demo GIF and screenshots in the README, generated from real output by
+  `docs/tools/render_media.py`.
+
 ### Fixed
 
 - Release checksum files record only the archive name, so `shasum -a 256 -c`

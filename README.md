@@ -20,7 +20,7 @@ called `hl7test` that turns those lines into something a person can read, and
 tells you what a receiving hospital system would reject.
 
 <p align="center">
-  <img src="docs/report.svg" alt="hl7test showing a decoded message with validation errors" width="700">
+  <img src="docs/demo.gif" alt="hl7test decoding a message, pulling out a field and catching errors in a broken one" width="760">
 </p>
 
 ---
@@ -115,6 +115,10 @@ hl7test examples/batch.hl7       # a file holding several messages
 ```
 
 ## Reading the output
+
+<p align="center">
+  <img src="docs/report.svg" alt="a decoded message with its validation findings" width="700">
+</p>
 
 The report has three parts.
 

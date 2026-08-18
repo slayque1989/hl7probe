@@ -19,6 +19,20 @@
 To rebuild an existing tag, run the workflow manually from the Actions tab and
 pass the tag name.
 
+## Refreshing the images in the README
+
+The screenshots and the demo GIF are generated from real output, so they cannot
+drift from what the tool prints:
+
+```sh
+python3 docs/tools/render_media.py
+```
+
+That rebuilds `docs/report.svg`, `docs/tui.svg` and `docs/demo.gif`. It needs
+Pillow for the GIF (`pip install pillow`) and a font at
+`/System/Library/Fonts/Menlo.ttc`, so it is a macOS convenience script rather
+than part of the build.
+
 ## Updating the Homebrew formula
 
 The formula lives in [`sudhi001/homebrew-tap`](https://github.com/sudhi001/homebrew-tap),
