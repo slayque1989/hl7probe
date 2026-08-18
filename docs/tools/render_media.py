@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate the images in docs/ from real hl7test output.
+"""Regenerate the images in docs/ from real hl7probe output.
 
     python3 docs/tools/render_media.py
 
@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
-BINARY = ROOT / "target" / "release" / "hl7test"
+BINARY = ROOT / "target" / "release" / "hl7probe"
 
 # One terminal palette shared by every renderer.
 PALETTE = {
@@ -145,7 +145,7 @@ def render_gif(scenes, path):
         draw.rectangle([0, 0, width, 26], fill=rgb(TITLE_BAR))
         for i, colour in enumerate(("#e06c75", "#e5c07b", "#98c379")):
             draw.ellipse([16 + i * 18, 8, 26 + i * 18, 18], fill=rgb(colour))
-        draw.text((78, 6), "hl7test", font=regular, fill=rgb("#7f848e"))
+        draw.text((78, 6), "hl7probe", font=regular, fill=rgb("#7f848e"))
         visible = lines[-GIF_ROWS:]
         for row, line in enumerate(visible):
             y = 40 + row * line_h
@@ -201,7 +201,7 @@ def run_tool(*args):
         [str(BINARY), *args], capture_output=True, text=True, cwd=ROOT, check=False
     )
     if result.returncode > 1:
-        sys.exit(f"hl7test {' '.join(args)} failed: {result.stderr}")
+        sys.exit(f"hl7probe {' '.join(args)} failed: {result.stderr}")
     return result.stdout
 
 
@@ -232,26 +232,26 @@ def main():
     subprocess.run(["cargo", "build", "--release", "--quiet"], cwd=ROOT, check=True)
 
     report = run_tool("examples/invalid.hl7", "--color", "always", "--width", "88", "-s", "PID,PV1")
-    (DOCS / "report.svg").write_text(render_svg(report, "hl7test admit.hl7"))
+    (DOCS / "report.svg").write_text(render_svg(report, "hl7probe admit.hl7"))
 
     viewer = capture_tui("examples/oru_r01.hl7", step=4, rows=24)
-    (DOCS / "tui.svg").write_text(render_svg(viewer, "hl7test --tui examples/oru_r01.hl7"))
+    (DOCS / "tui.svg").write_text(render_svg(viewer, "hl7probe --tui examples/oru_r01.hl7"))
 
     scenes = [
         (
-            "hl7test examples/adt_a01.hl7 -s PID",
+            "hl7probe examples/adt_a01.hl7 -s PID",
             run_tool("examples/adt_a01.hl7", "--color", "always", "--width", "84", "-s", "PID"),
             3200,
             4,
         ),
         (
-            "hl7test -f PID-5.1 examples/adt_a01.hl7",
+            "hl7probe -f PID-5.1 examples/adt_a01.hl7",
             run_tool("-f", "PID-5.1", "examples/adt_a01.hl7", "--color", "always"),
             1800,
             1,
         ),
         (
-            "hl7test examples/invalid.hl7 --summary",
+            "hl7probe examples/invalid.hl7 --summary",
             run_tool("examples/invalid.hl7", "--color", "always", "--width", "84", "--summary"),
             4000,
             4,

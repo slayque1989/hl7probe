@@ -3,7 +3,7 @@
 use std::io::Write;
 use std::process::{Command, Output, Stdio};
 
-const BIN: &str = env!("CARGO_BIN_EXE_hl7test");
+const BIN: &str = env!("CARGO_BIN_EXE_hl7probe");
 
 fn run(args: &[&str]) -> Output {
     Command::new(BIN)

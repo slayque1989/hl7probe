@@ -12,7 +12,7 @@
    git push origin v0.1.0
    ```
 
-4. The `Release` workflow builds `hl7test` for macOS (Apple silicon and Intel)
+4. The `Release` workflow builds `hl7probe` for macOS (Apple silicon and Intel)
    and Linux (x86_64 and aarch64), then attaches the tarballs and their SHA-256
    sums to a GitHub release.
 

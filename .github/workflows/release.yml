@@ -68,7 +68,7 @@ jobs:
       - name: Check the binary starts
         if: matrix.target != 'x86_64-apple-darwin'
         run: |
-          binary="target/${{ matrix.target }}/release/hl7test"
+          binary="target/${{ matrix.target }}/release/hl7probe"
           if [ "${{ runner.os }}" = "Windows" ]; then
             binary="${binary}.exe"
           fi
@@ -85,17 +85,17 @@ jobs:
           }
 
           version="${TAG#v}"
-          name="hl7test-${version}-${{ matrix.target }}"
+          name="hl7probe-${version}-${{ matrix.target }}"
           mkdir -p "dist/${name}"
           cp README.md LICENSE "dist/${name}/"
 
           # Zip on Windows, tarball elsewhere, and record the bare file name so
           # a checksum can be verified wherever the archive is downloaded to.
           if [ "${{ runner.os }}" = "Windows" ]; then
-            cp "target/${{ matrix.target }}/release/hl7test.exe" "dist/${name}/"
+            cp "target/${{ matrix.target }}/release/hl7probe.exe" "dist/${name}/"
             (cd dist && 7z a -tzip "${name}.zip" "${name}" > /dev/null && checksum "${name}.zip" | tee "${name}.zip.sha256")
           else
-            cp "target/${{ matrix.target }}/release/hl7test" "dist/${name}/"
+            cp "target/${{ matrix.target }}/release/hl7probe" "dist/${name}/"
             tar -czf "dist/${name}.tar.gz" -C dist "${name}"
             (cd dist && checksum "${name}.tar.gz" | tee "${name}.tar.gz.sha256")
           fi

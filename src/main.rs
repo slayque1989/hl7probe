@@ -1,4 +1,4 @@
-//! hl7test - inspect and validate HL7 v2 messages from the command line.
+//! hl7probe - inspect and validate HL7 v2 messages from the command line.
 
 mod datetime;
 mod parser;
@@ -28,19 +28,19 @@ enum ColorChoice {
 
 #[derive(Parser)]
 #[command(
-    name = "hl7test",
+    name = "hl7probe",
     version,
     about = "Inspect and validate HL7 v2 messages",
     long_about = "Reads HL7 v2.x messages, decodes them into named fields and reports \
 structural, required-field, data-type, code-table and consistency problems.\n\n\
 Exit status: 0 clean, 1 validation errors, 2 unreadable input.",
     after_help = "EXAMPLES:\n  \
-hl7test adt.hl7                    inspect a message\n  \
-hl7test --tui adt.hl7              browse it interactively\n  \
-hl7test -s PID,PV1 adt.hl7         only show two segments\n  \
-hl7test -f PID-5.1 adt.hl7         print one field value\n  \
-hl7test --json adt.hl7 | jq .      machine-readable report\n  \
-cat adt.hl7 | hl7test -q           validate in a pipeline"
+hl7probe adt.hl7                    inspect a message\n  \
+hl7probe --tui adt.hl7              browse it interactively\n  \
+hl7probe -s PID,PV1 adt.hl7         only show two segments\n  \
+hl7probe -f PID-5.1 adt.hl7         print one field value\n  \
+hl7probe --json adt.hl7 | jq .      machine-readable report\n  \
+cat adt.hl7 | hl7probe -q           validate in a pipeline"
 )]
 struct Cli {
     /// HL7 files to read; "-" or no argument reads standard input
@@ -115,7 +115,7 @@ fn main() -> ExitCode {
     match run(&cli) {
         Ok(code) => code,
         Err(e) => {
-            eprintln!("hl7test: {}", e);
+            eprintln!("hl7probe: {}", e);
             ExitCode::from(2)
         }
     }
@@ -269,7 +269,7 @@ fn quiet_line(
     )
 }
 
-/// Writes the report to stdout, treating a closed pipe (`hl7test ... | head`)
+/// Writes the report to stdout, treating a closed pipe (`hl7probe ... | head`)
 /// as a normal end rather than an error.
 fn write_out(text: &str) -> Result<(), String> {
     let mut stdout = std::io::stdout().lock();
@@ -523,7 +523,7 @@ fn emit_json(files: &[ParsedFile], strict: bool) -> Result<ExitCode, String> {
     }
 
     let doc = serde_json::json!({
-        "tool": "hl7test",
+        "tool": "hl7probe",
         "version": env!("CARGO_PKG_VERSION"),
         "files": out_files,
         "status": match worst {

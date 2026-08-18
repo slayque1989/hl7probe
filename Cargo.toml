@@ -1,6 +1,6 @@
 [package]
-name = "hl7test"
-version = "0.1.2"
+name = "hl7probe"
+version = "0.2.0"
 edition = "2021"
 description = "Inspect and validate HL7 v2 messages from the command line"
 license = "MIT"
@@ -14,7 +14,7 @@ rust-version = "1.74"
 exclude = ["docs/", "examples/", ".github/"]
 
 [[bin]]
-name = "hl7test"
+name = "hl7probe"
 path = "src/main.rs"
 
 [dev-dependencies]

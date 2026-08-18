@@ -15,12 +15,12 @@ pipes and carets that look like this:
 PID|1||123456^^^MERCY^MR||Smith^John^A^^Mr||19850312|M
 ```
 
-Reading that by hand is slow and error-prone. `hl7probe` installs a command
-called `hl7test` that turns those lines into something a person can read, and
-tells you what a receiving hospital system would reject.
+Reading that by hand is slow and error-prone. `hl7probe` turns those lines into
+something a person can read, and tells you what a receiving hospital system
+would reject.
 
 <p align="center">
-  <img src="docs/demo.gif" alt="hl7test decoding a message, pulling out a field and catching errors in a broken one" width="760">
+  <img src="docs/demo.gif" alt="hl7probe decoding a message, pulling out a field and catching errors in a broken one" width="760">
 </p>
 
 ---
@@ -46,7 +46,7 @@ You are wiring up an interface between two health systems and a message is
 being rejected. You need to know **what is in the message** and **what is wrong
 with it** — quickly, without opening a heavyweight integration engine.
 
-`hl7test` answers both in one command:
+`hl7probe` answers both in one command:
 
 - Every field is shown with its real name — `PID-5` becomes *Patient Name*.
 - Codes are translated — `M` becomes *Male*, `I` becomes *Inpatient*.
@@ -63,7 +63,6 @@ No configuration, no database, no server. One binary, one file, one answer.
 brew install sudhi001/tap/hl7probe
 ```
 
-The formula is named after the project; the command it installs is `hl7test`.
 Recent Homebrew versions ask you to trust a third-party tap the first time; if
 you see that prompt, run `brew trust sudhi001/tap` and install again.
 
@@ -71,20 +70,20 @@ you see that prompt, run `brew trust sudhi001/tap` and install again.
 
 Grab the archive for your platform from the
 [releases page](https://github.com/sudhi001/hl7probe/releases), unpack it and
-put `hl7test` somewhere on your `PATH`. The Linux builds are static, so they
+put `hl7probe` somewhere on your `PATH`. The Linux builds are static, so they
 run on any distribution regardless of its glibc version:
 
 ```sh
-shasum -a 256 -c hl7test-*.tar.gz.sha256      # optional: verify the download
-tar xzf hl7test-*.tar.gz
-sudo mv hl7test-*/hl7test /usr/local/bin/
+shasum -a 256 -c hl7probe-*.tar.gz.sha256      # optional: verify the download
+tar xzf hl7probe-*.tar.gz
+sudo mv hl7probe-*/hl7probe /usr/local/bin/
 ```
 
 On Windows, download the `x86_64-pc-windows-msvc.zip` archive, unpack it and put
-`hl7test.exe` in a folder on your `PATH`:
+`hl7probe.exe` in a folder on your `PATH`:
 
 ```powershell
-Expand-Archive hl7test-*-x86_64-pc-windows-msvc.zip -DestinationPath .
+Expand-Archive hl7probe-*-x86_64-pc-windows-msvc.zip -DestinationPath .
 ```
 
 ### With Cargo
@@ -96,7 +95,7 @@ cargo install --git https://github.com/sudhi001/hl7probe
 Check it works:
 
 ```sh
-hl7test --version
+hl7probe --version
 ```
 
 ## Quick start
@@ -104,22 +103,22 @@ hl7test --version
 Point it at a message file:
 
 ```sh
-hl7test message.hl7
+hl7probe message.hl7
 ```
 
 Or pipe one in:
 
 ```sh
-cat message.hl7 | hl7test
+cat message.hl7 | hl7probe
 ```
 
 Try it on the samples that ship with the project:
 
 ```sh
-hl7test examples/adt_a01.hl7     # a healthy admission message
-hl7test examples/invalid.hl7     # one with deliberate mistakes
-hl7test examples/oru_r01.hl7     # a lab result
-hl7test examples/batch.hl7       # a file holding several messages
+hl7probe examples/adt_a01.hl7     # a healthy admission message
+hl7probe examples/invalid.hl7     # one with deliberate mistakes
+hl7probe examples/oru_r01.hl7     # a lab result
+hl7probe examples/batch.hl7       # a file holding several messages
 ```
 
 ## Reading the output
@@ -193,11 +192,11 @@ The three marks mean:
 For bigger messages, browse instead of scroll:
 
 ```sh
-hl7test --tui message.hl7
+hl7probe --tui message.hl7
 ```
 
 <p align="center">
-  <img src="docs/tui.svg" alt="the hl7test interactive viewer" width="820">
+  <img src="docs/tui.svg" alt="the hl7probe interactive viewer" width="820">
 </p>
 
 Segments on the left, decoded fields on the right, problems underneath. Move
@@ -221,7 +220,7 @@ with the arrow keys, press `?` for help and `q` to quit.
 **One line per message**, ideal for checking a folder full of test messages:
 
 ```sh
-$ hl7test -q outbound/*.hl7
+$ hl7probe -q outbound/*.hl7
 adt_a01.hl7  ADT^A01  ✓ message passes all checks
 batch.hl7#1  ADT^A01  ✓ message passes all checks
 batch.hl7#2  ADT^A03  ✓ message passes all checks
@@ -237,18 +236,18 @@ invalid.hl7  ADT^A01  5 errors  ·  8 warnings
 | `2` | The input could not be read, or contained no HL7 message |
 
 ```sh
-hl7test --strict outbound/*.hl7 || exit 1
+hl7probe --strict outbound/*.hl7 || exit 1
 ```
 
 **Pull out a single value** without writing a parser:
 
 ```sh
-$ hl7test -f PID-5.1 message.hl7        # family name
+$ hl7probe -f PID-5.1 message.hl7        # family name
 Smith
-$ hl7test -f PID-3 message.hl7          # every patient identifier
+$ hl7probe -f PID-3 message.hl7          # every patient identifier
 123456^^^MERCY^MR
 987654321^^^SSA^SS
-$ hl7test -f 'OBX[2]-5' results.hl7     # value of the second OBX segment
+$ hl7probe -f 'OBX[2]-5' results.hl7     # value of the second OBX segment
 39.1
 ```
 
@@ -258,13 +257,13 @@ shell script.
 **Machine-readable reports** for dashboards and tests:
 
 ```sh
-hl7test --json message.hl7 | jq '.files[].messages[].findings[] | select(.severity == "error")'
+hl7probe --json message.hl7 | jq '.files[].messages[].findings[] | select(.severity == "error")'
 ```
 
 ## All the options
 
 ```
-hl7test [OPTIONS] [FILE]...
+hl7probe [OPTIONS] [FILE]...
 ```
 
 `FILE` can be given more than once. Use `-`, or no file at all, to read from
@@ -325,7 +324,7 @@ and an explanation of why it matters.
 
 ## What it accepts
 
-Real-world message files are messy. `hl7test` copes with:
+Real-world message files are messy. `hl7probe` copes with:
 
 - Windows, Unix or classic Mac line endings (`CRLF`, `LF`, `CR`)
 - MLLP framing bytes left over from a network capture
@@ -341,7 +340,7 @@ Requires [Rust](https://rustup.rs) 1.74 or newer.
 ```sh
 git clone https://github.com/sudhi001/hl7probe.git
 cd hl7probe
-cargo build --release      # binary at target/release/hl7test
+cargo build --release      # binary at target/release/hl7probe
 cargo test                 # 77 tests
 cargo clippy --all-targets
 ```

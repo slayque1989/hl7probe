@@ -566,7 +566,7 @@ fn draw_help(frame: &mut Frame) {
     let area = centered(62, 17, frame.area());
     let text = vec![
         Line::from(Span::styled(
-            "hl7test interactive viewer",
+            "hl7probe interactive viewer",
             Style::default().fg(ACCENT).add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
