@@ -7,12 +7,14 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
-### Changed
+### Fixed
 
-- Validation is organised as a registry of independent rules, so a new check is
-  a new rule rather than an edit to an existing pass.
-- The printed report and the interactive viewer share one decoded field model
-  instead of deriving the same rows separately.
+- Release checksum files record only the archive name, so `shasum -a 256 -c`
+  works in the directory a user downloads into.
+- The Intel macOS binary is cross-compiled on an Apple silicon runner, which no
+  longer leaves a release waiting on a scarce Intel runner.
+- The release job reports why creating a release failed instead of silently
+  trying to upload to one that does not exist.
 
 ## [0.1.0] - 2026-08-17
 
