@@ -72,8 +72,9 @@ Grab the archive for your platform from the
 put `hl7test` somewhere on your `PATH`:
 
 ```sh
-tar xzf hl7test-*-apple-darwin.tar.gz
-sudo mv hl7test /usr/local/bin/
+shasum -a 256 -c hl7test-*.tar.gz.sha256      # optional: verify the download
+tar xzf hl7test-*.tar.gz
+sudo mv hl7test-*/hl7test /usr/local/bin/
 ```
 
 ### With Cargo

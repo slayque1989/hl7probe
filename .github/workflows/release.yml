@@ -68,7 +68,9 @@ jobs:
           cp "target/${{ matrix.target }}/release/hl7test" "dist/${name}/"
           cp README.md LICENSE "dist/${name}/"
           tar -czf "dist/${name}.tar.gz" -C dist "${name}"
-          shasum -a 256 "dist/${name}.tar.gz" | tee "dist/${name}.tar.gz.sha256"
+          # Record the bare file name so `shasum -a 256 -c` works wherever the
+          # archive is downloaded to.
+          (cd dist && shasum -a 256 "${name}.tar.gz" | tee "${name}.tar.gz.sha256")
           echo "archive=dist/${name}.tar.gz" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v4
